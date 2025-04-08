@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app
+  namespace: tester
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      labels:
+        app: test-app
+    spec:
+      containers:
+
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+          name: http-std
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: "0.5"
+          requests:
+            memory: 128Mi
+            cpu: "0.1"
+
+      - name: multitool
+        image: wbitt/network-multitool
+        env:
+          - name: HTTP_PORT
+            value: "8080"
+        ports:
+          - containerPort: 8080
+            name: http-port-mt
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "20Mi"
+          limits:
+            cpu: "10m"
+            memory: "20Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-svc
+  namespace: tester
+spec:
+  selector:
+    app: test-app
+  type: ClusterIP
+  ports:
+    - name: nginx
+      protocol: TCP
+      port: 9001
+      targetPort: http-std
+    - name: multitool
+      protocol: TCP
+      port: 9002
+      targetPort: http-port-mt
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tester13
+  namespace: default
+spec:
+  containers:
+  - name: tester13
+    image: wbitt/network-multitool
+    command: ["/bin/sh", "-c", "while true; do sleep 30; done"]
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "20Mi"
+      limits:
+        cpu: "10m"
+        memory: "20Mi"

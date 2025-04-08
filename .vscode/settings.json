@@ -1,5 +1,7 @@
 {
     "yaml.schemas": {
-        "kubernetes://schema/apps/v1@deployment": "file:///home/a148ru/Netology/DevOps/kubernetes/hw/runapp-kube-wh-3/tasks/deployment.yml"
+        "kubernetes://schema/apps/v1@deployment": "file:///home/a148ru/Netology/DevOps/kubernetes/hw/runapp-kube-wh-3/tasks/deployment.yml",
+        "kubernetes://schema/v1@service": "file:///home/a148ru/Netology/DevOps/kubernetes/hw/net-1-kube-wh-4/tasks/np-service.yaml",
+        "kubernetes://schema/v1%40pod": "file:///home/a148ru/Netology/DevOps/kubernetes/hw/net-1-kube-wh-4/tasks/app-nginx-dsp.yml"
     }
 }

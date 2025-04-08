@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-svc-np
+  namespace: tester
+spec:
+  selector:
+    app: test-app
+  type: NodePort
+  ports:
+    - name: nginx
+      protocol: TCP
+      port: 9001
+      targetPort: http-std
+      nodePort: 31080
+#    - name: multitool
+#      protocol: TCP
+#      port: 9002
+#      targetPort: http-port-mt
