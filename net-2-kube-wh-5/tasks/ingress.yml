@@ -1,0 +1,55 @@
+# https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+#
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: secret-tls-test-ingress
+#  namespace: test-ingress
+#type: kubernetes.io/tls
+# The TLS secret must contain keys named 'tls.crt' and 'tls.key' that contain the certificate and private key to use for TLS.
+#data:
+#  tls.crt: base64 encoded public key content
+#  tls.key: base64 encoded private key content
+#
+###############
+#
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=*.lab.a148ru.ru/O=a148ru.ru
+# kubectl create secret tls secret-tls-test-ingress -n test-ingress --cert=tls.crt --key=tls.key
+###############
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tls-ingress
+  namespace: test-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - test-ingress.lab.a148ru.ru
+    secretName: secret-tls-test-ingress
+  rules:
+  - host: test-ingress.lab.a148ru.ru
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80
+  - host: test-ingress.lab.a148ru.ru
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-svc
+            port:
+              number: 80

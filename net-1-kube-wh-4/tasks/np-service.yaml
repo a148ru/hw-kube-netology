@@ -18,3 +18,24 @@ spec:
 #      protocol: TCP
 #      port: 9002
 #      targetPort: http-port-mt
+
+---
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-svc-lb
+  namespace: tester
+spec:
+  selector:
+    app: test-app
+  type: LoadBalancer
+  ports:
+    - name: nginx
+      protocol: TCP
+      port: 80
+      targetPort: http-std
+    - name: multitool
+      protocol: TCP
+      port: 1180
+      targetPort: http-port-mt
