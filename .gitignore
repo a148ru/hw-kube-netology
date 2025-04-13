@@ -8,3 +8,5 @@ tls.key
 create.keys
 .vscode*
 **/echoserver.yml
+.gitignore
+
