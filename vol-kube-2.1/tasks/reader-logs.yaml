@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: logreader
+  namespace: netology
+  labels:
+    app: logreader
+spec:
+  selector:
+    matchLabels:
+      app: logreader
+  template:
+    metadata:
+      labels:
+        app: logreader
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: logreader
+        image: wbitt/network-multitool
+        command: ["/bin/sh", "-c", "while true; do sleep 30; done"]
+        resources:
+          requests:
+            cpu: 1m
+            memory: 20Mi
+          limits:
+            cpu: 10m
+            memory: 100Mi
+        volumeMounts:
+        - name: logs
+          mountPath: /host_logs
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: logs
+        hostPath:
+          path: /var/log

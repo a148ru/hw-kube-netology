@@ -1,3 +1,6 @@
+# sudo vi /var/snap/microk8s/current/certs/csr.conf.template
+# sudo microk8s refresh-certs --cert front-proxy-client.crt
+#
 # https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
 #
 #apiVersion: v1
@@ -16,7 +19,15 @@
 # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=*.lab.a148ru.ru/O=a148ru.ru
 # kubectl create secret tls secret-tls-test-ingress -n test-ingress --cert=tls.crt --key=tls.key
 ###############
-
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-ingress-cm
+  namespace: test-ingress
+data:
+  disable-ipv6: "true"
+  disable-ipv6-dns: "true"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
