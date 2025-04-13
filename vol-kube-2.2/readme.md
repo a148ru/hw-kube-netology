@@ -70,7 +70,7 @@ Sun Apr 13 21:56:54 UTC 2025 - ok
  ```
 
 
-**PV** `RECLAIM Retain` - политика по умолчанию
+**PV** `RECLAIM POLICY Retain` - политика по умолчанию
 
 ![alt text](image-3.png)
 
