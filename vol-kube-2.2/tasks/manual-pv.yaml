@@ -1,0 +1,77 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: test-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /tmp/test-pv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-pvc
+  namespace: netology
+  labels:
+    app: test-vol
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  test-vol-app
+  namespace: netology
+  labels:
+    app:  test-vol-app
+spec:
+  selector:
+    matchLabels:
+      app: test-vol-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app:  test-vol-app
+    spec:
+      containers:
+      - name:  writer-in-pv
+        image:  busybox
+        command: [ 'sh', '-c', 'while true; do echo "$(date) - ok" >> "/data/file"; sleep 5; done']
+        resources:
+          requests:
+            cpu: 1m
+            memory: 20Mi
+          limits:
+            cpu: 10m
+            memory: 100Mi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      - name: reader
+        image: wbitt/network-multitool
+        command: ["/bin/sh", "-c", "while true; do sleep 30; done"]
+        resources:
+          requests:
+            cpu: 1m
+            memory: 20Mi
+          limits:
+            cpu: 10m
+            memory: 100Mi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: test-pvc
+
