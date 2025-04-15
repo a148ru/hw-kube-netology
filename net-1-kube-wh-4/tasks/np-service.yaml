@@ -20,7 +20,6 @@ spec:
 #      targetPort: http-port-mt
 
 ---
----
 apiVersion: v1
 kind: Service
 metadata:
