@@ -1,12 +1,10 @@
-.vscode/settings.json
+.vscode/*
 **./tests-1**
-**test-1**
-**test**
+tests-1/
 rules
-tls.crt
-tls.key
+**.crt
+**.key
 create.keys
-.vscode*
-**/echoserver.yml
 .gitignore
+**.certs/
 

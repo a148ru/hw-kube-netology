@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  {{ .Release.Name }}-
+  {{- .Values.web.names.deployment }}
+  labels:
+    app:  {{ .Release.Name }}-
+    {{- .Values.web.labels.app }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-
+      {{- .Values.web.labels.app }}
+  replicas: {{ .Values.web.replicas }}
+  template:
+    metadata:
+      labels:
+        app:  {{ .Release.Name }}-
+        {{- .Values.web.labels.app }}
+    spec:
+      initContainers:
+      - name: {{ .Release.Name }}-
+      {{- .Values.ic.rt.name }}
+        image: {{ .Values.ic.rt.image.name }}:
+        {{- .Values.ic.rt.image.tag }}
+        env:
+        - name: DBHOST
+          value: {{ .Release.Name }}-
+          {{- .Values.db.names.svc }}
+        - name: DBNAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-
+              {{- .Values.db.names.configmap }}
+              key: MYSQL_DATABASE
+        - name: DBUSER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-
+              {{- .Values.db.names.configmap }}
+              key: MYSQL_USER
+        - name: DBPASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-
+              {{- .Values.db.names.secret }}
+              key: MYSQL_PASSWORD
+        volumeMounts:
+        - name: {{ .Release.Name }}-
+          {{- .Values.pvc.name }}
+          mountPath: /opt
+      containers:
+      - name:  {{ .Release.Name }}-
+      {{- .Values.web.names.container }}
+        image:  {{ .Values.web.image.name }}:
+        {{- .Values.web.image.tag }}
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: RT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-
+              {{- .Values.web.names.cm_env }}
+              key: RT_HOST
+        ports:
+        - containerPort:  {{ .Values.web.ports.container.port }}
+          name:  {{ .Values.web.ports.container.name }}
+        volumeMounts:
+        - name: {{ .Release.Name }}-
+          {{- .Values.web.names.cm_conf }}
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: nginx.conf
+        - name: {{ .Release.Name }}-
+          {{- .Values.pvc.name }}
+          mountPath: /opt
+      volumes:
+        - name: {{ .Release.Name }}-
+          {{- .Values.web.names.cm_conf }}
+          configMap:
+            name: {{ .Release.Name }}-
+            {{- .Values.web.names.cm_conf }}
+        - name: {{ .Release.Name }}-
+          {{- .Values.pvc.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-
+            {{- .Values.pvc.name }}

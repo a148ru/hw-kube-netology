@@ -1,0 +1,268 @@
+---
+# Source: netology-app/templates/mysql-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-a-db-secret
+type: opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: password123
+  MYSQL_PASSWORD: password123
+---
+# Source: netology-app/templates/mysql-configmap.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-a-db-configmap
+data:
+  MYSQL_DATABASE: racktables
+  MYSQL_USER: racktables@%
+---
+# Source: netology-app/templates/nginx-configmap.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-a-nginx-env
+data:
+  RT_HOST: test-a-rt-fpm-svc:9000
+---
+# Source: netology-app/templates/nginx-configmap.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: test-a-nginx-config
+data:
+  nginx.conf: |
+        server {
+            listen 80 default_server;
+            server_name _;
+
+            root /opt/racktables/wwwroot;
+
+            location / {
+                index index.php;
+            }
+
+            location ~ \.php$ {
+                try_files $uri =404;
+                fastcgi_pass test-a-rt-fpm-svc:9000;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                include /etc/nginx/fastcgi_params;
+            }
+        }
+---
+# Source: netology-app/templates/pvc-opt.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-a-pvc-opt
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: microk8s-hostpath
+---
+# Source: netology-app/templates/mysql-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-a-db-svc
+  labels:
+    app: test-a-db
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: test-a-db
+  clusterIP: None
+---
+# Source: netology-app/templates/php-fpm-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-a-rt-fpm-svc
+spec:
+  selector:
+    app: test-a-rt
+  type: ClusterIP
+  sessionAffinity: None
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+  - name: rt-fpm
+    protocol: TCP
+    port: 9000
+    targetPort: rt
+---
+# Source: netology-app/templates/nginx-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  test-a-nginx-dep
+  labels:
+    app:  test-a-nginx
+spec:
+  selector:
+    matchLabels:
+      app: test-a-nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app:  test-a-nginx
+    spec:
+      initContainers:
+      - name: test-a-init-rt
+        image: a148ru/init-rt:0.0.1
+        env:
+        - name: DBHOST
+          value: test-a-db-svc
+        - name: DBNAME
+          valueFrom:
+            configMapKeyRef:
+              name: test-a-db-configmap
+              key: MYSQL_DATABASE
+        - name: DBUSER
+          valueFrom:
+            configMapKeyRef:
+              name: test-a-db-configmap
+              key: MYSQL_USER
+        - name: DBPASS
+          valueFrom:
+            secretKeyRef:
+              name: test-a-db-secret
+              key: MYSQL_PASSWORD
+        volumeMounts:
+        - name: test-a-pvc-opt
+          mountPath: /opt
+      containers:
+      - name:  test-a-nginx
+        image:  nginx:stable-alpine
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: RT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: test-a-nginx-env
+              key: RT_HOST
+        ports:
+        - containerPort:  80
+          name:  nginx-http
+        volumeMounts:
+        - name: test-a-nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: nginx.conf
+        - name: test-a-pvc-opt
+          mountPath: /opt
+      volumes:
+        - name: test-a-nginx-config
+          configMap:
+            name: test-a-nginx-config
+        - name: test-a-pvc-opt
+          persistentVolumeClaim:
+            claimName: test-a-pvc-opt
+---
+# Source: netology-app/templates/php-fpm-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  test-a-rt-fpm
+  labels:
+    app:  test-a-rt
+spec:
+  selector:
+    matchLabels:
+      app: test-a-rt
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: test-a-rt
+    spec:
+      containers:
+      - name:  test-a-rt
+        image:  a148ru/php5-fpm:latest
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort:  9000
+          name: rt
+        volumeMounts:
+        - name: test-a-pvc-opt
+          mountPath: /opt
+      volumes:
+        - name: test-a-pvc-opt
+          persistentVolumeClaim:
+            claimName: test-a-pvc-opt
+---
+# Source: netology-app/templates/mysql-statefuset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test-a-db-sfs
+spec:
+  selector:
+    matchLabels:
+      app: test-a-db
+  serviceName: test-a-db-svc
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: test-a-db
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: test-a-db
+        image: mariadb:latest
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: test-a-db-store
+          mountPath: /var/lib/mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-a-db-secret
+                key: MYSQL_ROOT_PASSWORD
+          - name: MYSQL_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: test-a-db-configmap
+                key: MYSQL_DATABASE
+          - name: MYSQL_USER
+            valueFrom:
+              configMapKeyRef:
+                name: test-a-db-configmap
+                key: MYSQL_USER
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-a-db-secret
+                key: MYSQL_PASSWORD
+  volumeClaimTemplates:
+  - metadata:
+      name: test-a-db-store
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: microk8s-hostpath
+      
+      resources:
+        requests:
+          storage: 5Gi

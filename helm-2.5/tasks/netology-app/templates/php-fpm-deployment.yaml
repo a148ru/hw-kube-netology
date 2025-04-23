@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  {{ .Release.Name }}-
+  {{- .Values.rt.names.deployment }}
+  labels:
+    app:  {{ .Release.Name }}-
+    {{- .Values.rt.labels.app }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-
+      {{- .Values.rt.labels.app }}
+  replicas: {{ .Values.rt.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-
+        {{- .Values.rt.labels.app }}
+    spec:
+      containers:
+      - name:  {{ .Release.Name }}-
+      {{- .Values.rt.names.container }}
+        image:  {{ .Values.rt.image.name }}:
+        {{- .Values.rt.image.tag }}
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort:  {{ .Values.rt.ports.container.port }}
+          name: {{ .Values.rt.ports.container.name }}
+        volumeMounts:
+        - name: {{ .Release.Name }}-
+          {{- .Values.pvc.name }}
+          mountPath: /opt
+      volumes:
+        - name: {{ .Release.Name }}-
+          {{- .Values.pvc.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-
+            {{- .Values.pvc.name }}

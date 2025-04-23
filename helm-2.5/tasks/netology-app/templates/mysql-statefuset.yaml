@@ -1,0 +1,67 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-
+  {{- .Values.db.names.statefulset }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-
+      {{- .Values.db.labels.app }}
+  serviceName: {{ .Release.Name }}-
+  {{- .Values.db.names.svc }}
+  replicas: {{ .Values.db.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-
+        {{- .Values.db.labels.app }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.db.terminationGracePeriodSeconds }}
+      containers:
+      - name: {{ .Release.Name }}-
+      {{- .Values.db.names.container }}
+        image: {{ .Values.db.image.name }}:{{ .Values.db.image.tag }}
+        ports:
+        - containerPort: {{ .Values.db.ports.containerPort }}
+        volumeMounts:
+        - name: {{ .Release.Name }}-
+        {{- .Values.db.names.store }}
+          mountPath: /var/lib/mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }}-
+                {{- .Values.db.names.secret }}
+                key: MYSQL_ROOT_PASSWORD
+          - name: MYSQL_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Release.Name }}-
+                {{- .Values.db.names.configmap }}
+                key: MYSQL_DATABASE
+          - name: MYSQL_USER
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Release.Name }}-
+                {{- .Values.db.names.configmap }}
+                key: MYSQL_USER
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }}-
+                {{- .Values.db.names.secret }}
+                key: MYSQL_PASSWORD
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ .Release.Name }}-
+      {{- .Values.db.names.store }}
+    spec:
+      accessModes: {{ .Values.db.strageAccessModes }}
+      {{ if .Values.db.storageClassName }}storageClassName: {{ .Values.db.storageClassName }}
+      {{ end }}
+      resources:
+        requests:
+          storage: {{ .Values.db.storageSize }}

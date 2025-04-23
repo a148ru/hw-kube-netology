@@ -1,0 +1,36 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-
+  {{- .Values.web.names.cm_env }}
+data:
+  RT_HOST: {{ .Release.Name }}-
+  {{- .Values.rt.names.svc }}:
+  {{- .Values.rt.ports.svc.port }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-
+  {{- .Values.web.names.cm_conf }}
+data:
+  nginx.conf: |
+        server {
+            listen 80 default_server;
+            server_name _;
+
+            root /opt/racktables/wwwroot;
+
+            location / {
+                index index.php;
+            }
+
+            location ~ \.php$ {
+                try_files $uri =404;
+                fastcgi_pass {{ .Release.Name }}-{{- .Values.rt.names.svc }}:9000;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                include /etc/nginx/fastcgi_params;
+            }
+        }

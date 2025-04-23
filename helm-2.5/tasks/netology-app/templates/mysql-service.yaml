@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-
+  {{- .Values.db.names.svc }}
+  labels:
+    app: {{ .Release.Name }}-
+    {{- .Values.db.labels.app }}
+spec:
+  ports:
+  - port: {{ .Values.db.ports.svc }}
+  selector:
+    app: {{ .Release.Name }}-
+    {{- .Values.db.labels.app }}
+  {{ if eq .Values.db.clusterip "disable" }}clusterIP: None{{- end -}}

@@ -1,0 +1,83 @@
+---
+db:
+  name: "db"
+  image:
+    name:           "mariadb"
+    tag:            "latest"
+  names:
+    secret:         "db-secret"
+    configmap:      "db-configmap"
+    svc:        "db-svc"
+    statefulset:    "db-sfs"
+    container:      "db"
+    store:          "db-store"
+  labels:
+    app:            "db"
+  replicas:         1
+  ports:
+    svc:            3306
+    containerPort:  3306
+  clusterip:        "disable"
+  storageClassName: "microk8s-hostpath"
+  strageAccessModes: "[\"ReadWriteOnce\"]"
+  terminationGracePeriodSeconds: 10
+  storageSize:      5Gi
+  rootPassword:       "password123"
+  password:           "password123"
+  dbname:             "racktables"
+  dbuser:             "racktables@%"
+  dbpass:             "password123"
+rt:
+  name: "rt-fpm"
+  replicas: 1
+  image:
+    name: "a148ru/php5-fpm"
+    tag: "latest"
+  names:
+    deployment: "rt-fpm"
+    container: "rt"
+    svc: "rt-fpm-svc"
+  labels: 
+    app: "rt"
+  ports:
+    container:
+      port: 9000
+      name: rt
+    svc:
+      port: 9000
+web:
+  name: nginx 
+  replicas: 1
+  image:
+    name: nginx
+    tag: stable-alpine
+  labels:
+    app: nginx
+  names:
+    deployment: nginx-dep
+    container: nginx
+    svc: nginx-svc
+    cm_env: nginx-env
+    cm_conf: nginx-config
+  ports:
+    container:
+      port: 80
+      name: nginx-http
+    svc:
+      port: 80
+ic:
+  rt:
+    name: init-rt
+    image:
+      name: "a148ru/init-rt"
+      tag: 0.0.1
+pvc:
+  name: pvc-opt
+  sc: microk8s-hostpath
+  size: 5Gi
+ingress:
+  name: rt-ingress
+  hostname: rt.example.com
+  port: 80
+  path: "/"
+  pathtype: Prefix
