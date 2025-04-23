@@ -1,0 +1,15 @@
+FROM alpine:3.6
+
+ENV DBHOST="mariadb" \
+    DBNAME="racktables" \
+    DBUSER="racktables" \
+    DBPASS=""
+
+COPY entrypoint.sh /entrypoint.sh
+COPY racktables.tar.gz /racktables.tar.gz 
+RUN mkdir /opt
+RUN apk update
+RUN chmod +x /entrypoint.sh
+
+
+CMD ["/entrypoint.sh"]
